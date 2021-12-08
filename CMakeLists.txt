@@ -16,7 +16,7 @@ set (VSOMEIP_HOTFIX_VERSION 3)
 
 set (VSOMEIP_VERSION ${VSOMEIP_MAJOR_VERSION}.${VSOMEIP_MINOR_VERSION}.${VSOMEIP_PATCH_VERSION})
 set (PACKAGE_VERSION ${VSOMEIP_VERSION}) # Used in documentation/doxygen.in
-set (CMAKE_VERBOSE_MAKEFILE off)
+set (CMAKE_VERBOSE_MAKEFILE TRUE)
 
 if (NOT GTEST_ROOT)
     if (DEFINED ENV{GTEST_ROOT})
@@ -164,8 +164,10 @@ else()
 endif()
 
 message( STATUS "Using boost version: ${VSOMEIP_BOOST_VERSION}" )
-if (${VSOMEIP_BOOST_VERSION} GREATER 107400)
-message( ERROR "boost version ${VSOMEIP_BOOST_VERSION} is not (yet) supported. Latest supported version is 1.74.0" )
+if (${VSOMEIP_BOOST_VERSION} GREATER 107700)
+message( ERROR "boost version ${VSOMEIP_BOOST_VERSION} is not (yet) supported. Latest supported version is 1.77.0" )
+elseif(${VSOMEIP_BOOST_VERSION} GREATER 107400)
+set(VSOMEIP_BOOST_HELPER implementation/helper/1.76)
 elseif(${VSOMEIP_BOOST_VERSION} GREATER 107300)
 set(VSOMEIP_BOOST_HELPER implementation/helper/1.74)
 elseif(${VSOMEIP_BOOST_VERSION} GREATER 106999)
