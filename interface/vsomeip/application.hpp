@@ -139,6 +139,19 @@ public:
 
     /**
      *
+     * \ brief Removes an instance from Routingmanager
+     * This method removes an instannce from the routing manager.
+     * Usually this is only necessary for devices with incorrect implementation 
+     * of the SomeIP protocol.
+     *
+     * \param service service-id of the instance to be removed
+     * \param instance instance-id of the instance to be removed
+     */
+    virtual void expire_services(const service_t service,
+            const instance_t instance) = 0;
+
+    /**
+     *
      * \brief Get the security mode of the application
      *
      * \return security mode

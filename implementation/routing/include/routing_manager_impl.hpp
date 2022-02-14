@@ -229,6 +229,9 @@ public:
     void on_remote_unsubscribe(
             std::shared_ptr<remote_subscription> &_subscription);
 
+
+    void expire_services(const service_t service,
+                         const instance_t instance) override;
     void expire_subscriptions(const boost::asio::ip::address &_address);
     void expire_subscriptions(const boost::asio::ip::address &_address,
                               std::uint16_t _port, bool _reliable);
