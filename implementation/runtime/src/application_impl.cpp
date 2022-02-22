@@ -562,7 +562,18 @@ void application_impl::process(int _number) {
 void application_impl::expire_services(const service_t service, const instance_t instance) {
     const auto discovery = std::dynamic_pointer_cast<sd::service_discovery_host>(routing_);
     if (discovery) {
-        discovery->expire_services(service, instance);
+        std::shared_ptr<sync_handler> its_sync_handler = std::make_shared<sync_handler>([service, instance, discovery] {
+            discovery->expire_services(service, instance);
+        });
+        its_sync_handler->handler_type_ = handler_type_e::UNKNOWN;
+        its_sync_handler->service_id_ = service;
+        its_sync_handler->instance_id_ = instance;
+
+        std::lock_guard<std::mutex> its_lock(handlers_mutex_);
+        handlers_.push_back(its_sync_handler);
+        dispatcher_condition_.notify_one();
+    } else {
+        VSOMEIP_ERROR << "No Service Discovery available";
     }
 }
 
