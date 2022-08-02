@@ -35,6 +35,11 @@ set (INSTALL_LIB_DIR lib CACHE STRING "Installation directory for libraries")
 set (INSTALL_BIN_DIR bin CACHE STRING "Installation directory for executables")
 set (INSTALL_INCLUDE_DIR include CACHE STRING "Installation directory for header files")
 
+# Offer the user the choice of all vsomeip-libraries are going to be built
+set (ENABLE_SD ON CACHE BOOL "Build service discovery library")
+set (ENABLE_E2E ON CACHE BOOL "Build e2e library")
+set (INSTALL_EXAMPLE_FILES ON CACHE BOOL "Install example configuration files")
+
 if (WIN32 AND NOT CYGWIN)
     set (DEF_INSTALL_CMAKE_DIR CMake)
 else ()
@@ -294,36 +299,38 @@ target_link_libraries(${VSOMEIP_NAME} PRIVATE ${Boost_LIBRARIES} ${USE_RT} ${DL_
 ################################################################################
 # Service Discovery library
 ################################################################################
-file(GLOB ${VSOMEIP_NAME}-sd_SRC
-    "implementation/service_discovery/src/*.cpp"
-)
-list(SORT ${VSOMEIP_NAME}-sd_SRC)
+if (ENABLE_SD)
+    file(GLOB ${VSOMEIP_NAME}-sd_SRC
+        "implementation/service_discovery/src/*.cpp"
+    )
+    list(SORT ${VSOMEIP_NAME}-sd_SRC)
 
-add_library(${VSOMEIP_NAME}-sd SHARED ${${VSOMEIP_NAME}-sd_SRC})
-set_target_properties (${VSOMEIP_NAME}-sd PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
-if (MSVC)
-    set_target_properties(${VSOMEIP_NAME}-sd PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
-endif ()
+    add_library(${VSOMEIP_NAME}-sd SHARED ${${VSOMEIP_NAME}-sd_SRC})
+    set_target_properties (${VSOMEIP_NAME}-sd PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
+    if (MSVC)
+        set_target_properties(${VSOMEIP_NAME}-sd PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
+    endif ()
 
-target_link_libraries(${VSOMEIP_NAME}-sd ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${OS_LIBS})
-
+    target_link_libraries(${VSOMEIP_NAME}-sd ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${OS_LIBS})
+endif()
 
 ################################################################################
 # E2E library
 ################################################################################
-file(GLOB_RECURSE ${VSOMEIP_NAME}-e2e_SRC
-    "implementation/e2e_protection/src/*.cpp"
-)
-list(SORT ${VSOMEIP_NAME}-e2e_SRC)
+if (ENABLE_E2E)
+    file(GLOB_RECURSE ${VSOMEIP_NAME}-e2e_SRC
+        "implementation/e2e_protection/src/*.cpp"
+    )
+    list(SORT ${VSOMEIP_NAME}-e2e_SRC)
 
-add_library(${VSOMEIP_NAME}-e2e SHARED ${${VSOMEIP_NAME}-e2e_SRC})
-set_target_properties (${VSOMEIP_NAME}-e2e PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
-if (MSVC)
-    set_target_properties(${VSOMEIP_NAME}-e2e PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
-endif ()
+    add_library(${VSOMEIP_NAME}-e2e SHARED ${${VSOMEIP_NAME}-e2e_SRC})
+    set_target_properties (${VSOMEIP_NAME}-e2e PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
+    if (MSVC)
+        set_target_properties(${VSOMEIP_NAME}-e2e PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
+    endif ()
 
-target_link_libraries(${VSOMEIP_NAME}-e2e ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${OS_LIBS})
-
+    target_link_libraries(${VSOMEIP_NAME}-e2e ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${OS_LIBS})
+endif()
 ################################################################################
 # Compatibility library
 ################################################################################
@@ -422,25 +429,29 @@ install (
     COMPONENT dev
 )
 
-install (
-    TARGETS ${VSOMEIP_NAME}-e2e
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-)
+if (ENABLE_E2E)
+    install (
+        TARGETS ${VSOMEIP_NAME}-e2e
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
+    )
+endif()
 
 if (VSOMEIP_ENABLE_MULTIPLE_ROUTING_MANAGERS EQUAL 0)
-install (
-    TARGETS ${VSOMEIP_NAME}-cfg
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-)
+    install (
+        TARGETS ${VSOMEIP_NAME}-cfg
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
+    )
 endif ()
 
-install (
-    TARGETS ${VSOMEIP_NAME}-sd
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-)
+if (ENABLE_SD)
+    install (
+        TARGETS ${VSOMEIP_NAME}-sd
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
+    )
+endif()
 
 if (VSOMEIP_ENABLE_COMPAT EQUAL 1)
 install (
@@ -477,9 +488,11 @@ install(FILES ${PROJECT_BINARY_DIR}/vsomeip.pc DESTINATION lib/pkgconfig)
 
 endif ()
 
-install (
-  FILES ${EXAMPLE_CONFIG_FILES} DESTINATION etc/vsomeip COMPONENT config
-)
+if (INSTALL_EXAMPLE_FILES)
+    install (
+      FILES ${EXAMPLE_CONFIG_FILES} DESTINATION etc/vsomeip COMPONENT config
+    )
+endif()
 
 # Add all targets to the build-tree export set
 export (TARGETS ${VSOMEIP_NAME} FILE "${PROJECT_BINARY_DIR}/vsomeip3Targets.cmake")
