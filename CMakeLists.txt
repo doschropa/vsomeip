@@ -25,7 +25,6 @@ if (NOT GTEST_ROOT)
         set(GTEST_ROOT "n/a" CACHE STRING "Path to root folder of googletest. Must be set for building the tests.")
     endif()
 endif()
-
 ###################################################################################################
 # see http://www.cmake.org/Wiki/CMake/Tutorials/How_to_create_a_ProjectConfig.cmake_file
 ###################################################################################################
@@ -84,6 +83,15 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     set(NO_DEPRECATED "-Wno-deprecated")
     set(OS_CXX_FLAGS "-pthread")
 endif (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(OS "WINDOWS")
+    set(DL_LIBRARY "")
+    set(EXPORTSYMBOLS "")
+    SET(BOOST_WINDOWS_VERSION "0x600" CACHE STRING "Set the same Version as the Version with which Boost was built, otherwise there will be errors. (normaly 0x600 is for Windows 7 and 0x501 is for Windows XP)")
+    set(OS_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WIN32_WINNT=${BOOST_WINDOWS_VERSION} -DWIN32 -DBOOST_ASIO_DISABLE_IOCP -fpermissive -DBOOST_ALL_DYN_LINK")
+    set(USE_RT "")
+endif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 ################################################################################
 # Options
@@ -239,7 +247,7 @@ if (MSVC)
     ADD_DEFINITIONS( -DBOOST_ALL_DYN_LINK )
 else()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${OS} ${OS_CXX_FLAGS} -std=c++11 ${NO_DEPRECATED} ${EXPORTSYMBOLS}")
-    if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
+    if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android" AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(USE_RT "rt")
     endif()
 endif()
