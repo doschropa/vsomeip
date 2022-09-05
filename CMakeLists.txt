@@ -39,13 +39,7 @@ set (ENABLE_SD ON CACHE BOOL "Build service discovery library")
 set (ENABLE_E2E ON CACHE BOOL "Build e2e library")
 set (INSTALL_EXAMPLE_FILES ON CACHE BOOL "Install example configuration files")
 
-if (WIN32 AND NOT CYGWIN)
-    set (DEF_INSTALL_CMAKE_DIR CMake)
-else ()
-    set (DEF_INSTALL_CMAKE_DIR lib/cmake/${VSOMEIP_NAME})
-endif ()
-
-set (INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE STRING "Installation directory for CMake files")
+set (INSTALL_CMAKE_DIR lib/cmake/${VSOMEIP_NAME} CACHE STRING "Installation directory for CMake files")
 
 ###################################################################################################
 # Set a default build type if none was specified
