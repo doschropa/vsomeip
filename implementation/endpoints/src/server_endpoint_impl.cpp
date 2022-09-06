@@ -635,7 +635,7 @@ void server_endpoint_impl<Protocol>::send_cbk(
             } else { // all messages of the to be stopped service have been sent
                 auto handler = stp_hndlr_iter->second;
                 auto ptr = this->shared_from_this();
-                #ifndef _WIN32
+                #ifndef _MSC_VER
                 endpoint_impl<Protocol>::
                 #endif
                     service_.post([ptr, handler, its_stopped_service](){
@@ -664,7 +664,7 @@ void server_endpoint_impl<Protocol>::send_cbk(
             if (found_cbk != prepare_stop_handlers_.end()) {
                 auto handler = found_cbk->second;
                 auto ptr = this->shared_from_this();
-                #ifndef _WIN32
+                #ifndef _MSC_VER
                 endpoint_impl<Protocol>::
                 #endif
                     service_.post([ptr, handler](){

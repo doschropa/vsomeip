@@ -25,7 +25,6 @@ if (NOT GTEST_ROOT)
         set(GTEST_ROOT "n/a" CACHE STRING "Path to root folder of googletest. Must be set for building the tests.")
     endif()
 endif()
-
 ###################################################################################################
 # see http://www.cmake.org/Wiki/CMake/Tutorials/How_to_create_a_ProjectConfig.cmake_file
 ###################################################################################################
@@ -35,13 +34,12 @@ set (INSTALL_LIB_DIR lib CACHE STRING "Installation directory for libraries")
 set (INSTALL_BIN_DIR bin CACHE STRING "Installation directory for executables")
 set (INSTALL_INCLUDE_DIR include CACHE STRING "Installation directory for header files")
 
-if (WIN32 AND NOT CYGWIN)
-    set (DEF_INSTALL_CMAKE_DIR CMake)
-else ()
-    set (DEF_INSTALL_CMAKE_DIR lib/cmake/${VSOMEIP_NAME})
-endif ()
+# Offer the user the choice of all vsomeip-libraries are going to be built
+set (ENABLE_SD ON CACHE BOOL "Build service discovery library")
+set (ENABLE_E2E ON CACHE BOOL "Build e2e library")
+set (INSTALL_EXAMPLE_FILES ON CACHE BOOL "Install example configuration files")
 
-set (INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE STRING "Installation directory for CMake files")
+set (INSTALL_CMAKE_DIR lib/cmake/${VSOMEIP_NAME} CACHE STRING "Installation directory for CMake files")
 
 ###################################################################################################
 # Set a default build type if none was specified
@@ -59,8 +57,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(DL_LIBRARY "dl")
     set(EXPORTSYMBOLS "-Wl,-export-dynamic -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exportmap.gcc")
     set(NO_DEPRECATED "")
-    set(OPTIMIZE "")
-    set(OS_CXX_FLAGS "-D_GLIBCXX_USE_NANOSLEEP -pthread -O -Wall -Wextra -Wformat -Wformat-security -Wconversion -fexceptions -fstrict-aliasing -fstack-protector-strong -fasynchronous-unwind-tables -fno-omit-frame-pointer -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Werror=format-security -fPIE -pie -Wl,-z,relro,-z,now")
+    set(OS_CXX_FLAGS "-D_GLIBCXX_USE_NANOSLEEP -pthread -Wall -Wextra -Wformat -Wformat-security -Wconversion -fexceptions -fstrict-aliasing -fstack-protector-strong -fasynchronous-unwind-tables -fno-omit-frame-pointer -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Werror=format-security -fPIE -pie -Wl,-z,relro,-z,now")
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Android")
@@ -68,7 +65,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Android")
     set(DL_LIBRARY "")
     set(EXPORTSYMBOLS "")
     set(NO_DEPRECATED "")
-    set(OPTIMIZE "")
 
     find_library(ANDROID_LOG_LIB log)
     set(OS_LIBS ${ANDROID_LOG_LIB})
@@ -79,9 +75,28 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     set(DL_LIBRARY "")
     set(EXPORTSYMBOLS "")
     set(NO_DEPRECATED "-Wno-deprecated")
-    set(OPTIMIZE "")
     set(OS_CXX_FLAGS "-pthread")
 endif (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    SET(BOOST_WINDOWS_VERSION "0x600" CACHE STRING "Set the same Version as the Version with which Boost was built, otherwise there will be errors. (normaly 0x600 is for Windows 7 and 0x501 is for Windows XP)")
+    if (MSVC)
+        message("using MSVC Compiler")
+        # add_definitions(-DVSOMEIP_DLL_COMPILATION) now it is controlled per target
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WIN32_WINNT=${BOOST_WINDOWS_VERSION} -DWIN32 -DBOOST_ASIO_DISABLE_IOCP /EHsc")
+        set(OS_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WIN32_WINNT=${BOOST_WINDOWS_VERSION} -DWIN32 -DBOOST_ASIO_DISABLE_IOCP /EHsc")
+        set(USE_RT "")
+        ADD_DEFINITIONS( -DBOOST_ALL_DYN_LINK )
+        link_directories(${Boost_LIBRARY_DIR_DEBUG})
+    else()
+        set(OS "WINDOWS")
+        set(DL_LIBRARY "")
+        set(EXPORTSYMBOLS "")
+        set(OS_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WIN32_WINNT=${BOOST_WINDOWS_VERSION} -DWIN32 -DBOOST_ASIO_DISABLE_IOCP -DBOOST_ALL_DYN_LINK -fpermissive")
+        set(OS_LIBS "ws2_32" "wsock32")
+        set(USE_RT "")
+    endif()
+endif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 ################################################################################
 # Options
@@ -226,20 +241,9 @@ else()
 add_definitions(-DVSOMEIP_VERSION="${VSOMEIP_VERSION}.${VSOMEIP_HOTFIX_VERSION}")
 endif()
 
-if (MSVC)
-    message("using MSVC Compiler")
-    # add_definitions(-DVSOMEIP_DLL_COMPILATION) now it is controlled per target
-    SET(BOOST_WINDOWS_VERSION "0x600" CACHE STRING "Set the same Version as the Version with which Boost was built, otherwise there will be errors. (normaly 0x600 is for Windows 7 and 0x501 is for Windows XP)")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WIN32_WINNT=${BOOST_WINDOWS_VERSION} -DWIN32 -DBOOST_ASIO_DISABLE_IOCP /EHsc")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_WINSOCK_DEPRECATED_NO_WARNINGS -D_WIN32_WINNT=${BOOST_WINDOWS_VERSION} -DWIN32 -DBOOST_ASIO_DISABLE_IOCP /EHsc")
-    set(USE_RT "")
-    link_directories(${Boost_LIBRARY_DIR_DEBUG})
-    ADD_DEFINITIONS( -DBOOST_ALL_DYN_LINK )
-else()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${OS} ${OS_CXX_FLAGS} -g ${OPTIMIZE} -std=c++11 ${NO_DEPRECATED} ${EXPORTSYMBOLS}")
-    if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
-        set(USE_RT "rt")
-    endif()
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${OS} ${OS_CXX_FLAGS} -std=c++11 ${NO_DEPRECATED} ${EXPORTSYMBOLS}")
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android" AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(USE_RT "rt")
 endif()
 
 ################################################################################
@@ -252,7 +256,7 @@ list(SORT ${VSOMEIP_NAME}-cfg_SRC)
 if (VSOMEIP_ENABLE_MULTIPLE_ROUTING_MANAGERS EQUAL 0)
     add_library(${VSOMEIP_NAME}-cfg SHARED ${${VSOMEIP_NAME}-cfg_SRC})
     set_target_properties (${VSOMEIP_NAME}-cfg PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
-    if (MSVC)
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set_target_properties(${VSOMEIP_NAME}-cfg PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
     endif()
 
@@ -280,7 +284,7 @@ list(SORT ${VSOMEIP_NAME}_SRC)
 
 add_library(${VSOMEIP_NAME} SHARED ${${VSOMEIP_NAME}_SRC})
 set_target_properties (${VSOMEIP_NAME} PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
-if (MSVC)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set_target_properties(${VSOMEIP_NAME} PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION")
 endif ()
 target_include_directories(${VSOMEIP_NAME} INTERFACE
@@ -297,36 +301,38 @@ target_link_libraries(${VSOMEIP_NAME} PRIVATE ${Boost_LIBRARIES} ${USE_RT} ${DL_
 ################################################################################
 # Service Discovery library
 ################################################################################
-file(GLOB ${VSOMEIP_NAME}-sd_SRC
-    "implementation/service_discovery/src/*.cpp"
-)
-list(SORT ${VSOMEIP_NAME}-sd_SRC)
+if (ENABLE_SD)
+    file(GLOB ${VSOMEIP_NAME}-sd_SRC
+        "implementation/service_discovery/src/*.cpp"
+    )
+    list(SORT ${VSOMEIP_NAME}-sd_SRC)
 
-add_library(${VSOMEIP_NAME}-sd SHARED ${${VSOMEIP_NAME}-sd_SRC})
-set_target_properties (${VSOMEIP_NAME}-sd PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
-if (MSVC)
-    set_target_properties(${VSOMEIP_NAME}-sd PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
-endif ()
+    add_library(${VSOMEIP_NAME}-sd SHARED ${${VSOMEIP_NAME}-sd_SRC})
+    set_target_properties (${VSOMEIP_NAME}-sd PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        set_target_properties(${VSOMEIP_NAME}-sd PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
+    endif ()
 
-target_link_libraries(${VSOMEIP_NAME}-sd ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${OS_LIBS})
-
+    target_link_libraries(${VSOMEIP_NAME}-sd ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${OS_LIBS})
+endif()
 
 ################################################################################
 # E2E library
 ################################################################################
-file(GLOB_RECURSE ${VSOMEIP_NAME}-e2e_SRC
-    "implementation/e2e_protection/src/*.cpp"
-)
-list(SORT ${VSOMEIP_NAME}-e2e_SRC)
+if (ENABLE_E2E)
+    file(GLOB_RECURSE ${VSOMEIP_NAME}-e2e_SRC
+        "implementation/e2e_protection/src/*.cpp"
+    )
+    list(SORT ${VSOMEIP_NAME}-e2e_SRC)
 
-add_library(${VSOMEIP_NAME}-e2e SHARED ${${VSOMEIP_NAME}-e2e_SRC})
-set_target_properties (${VSOMEIP_NAME}-e2e PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
-if (MSVC)
-    set_target_properties(${VSOMEIP_NAME}-e2e PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
-endif ()
+    add_library(${VSOMEIP_NAME}-e2e SHARED ${${VSOMEIP_NAME}-e2e_SRC})
+    set_target_properties (${VSOMEIP_NAME}-e2e PROPERTIES VERSION ${VSOMEIP_VERSION} SOVERSION ${VSOMEIP_MAJOR_VERSION})
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        set_target_properties(${VSOMEIP_NAME}-e2e PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
+    endif ()
 
-target_link_libraries(${VSOMEIP_NAME}-e2e ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${OS_LIBS})
-
+    target_link_libraries(${VSOMEIP_NAME}-e2e ${VSOMEIP_NAME} ${Boost_LIBRARIES} ${USE_RT} ${DL_LIBRARY} ${OS_LIBS})
+endif()
 ################################################################################
 # Compatibility library
 ################################################################################
@@ -345,7 +351,7 @@ list(SORT ${VSOMEIP_COMPAT_NAME}_SRC)
 
 add_library(${VSOMEIP_COMPAT_NAME} SHARED ${${VSOMEIP_COMPAT_NAME}_SRC})
 set_target_properties (${VSOMEIP_COMPAT_NAME} PROPERTIES VERSION ${VSOMEIP_COMPAT_VERSION} SOVERSION ${VSOMEIP_COMPAT_MAJOR_VERSION})
-if (MSVC)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set_target_properties(${VSOMEIP_COMPAT_NAME} PROPERTIES COMPILE_DEFINITIONS "VSOMEIP_DLL_COMPILATION_PLUGIN")
 endif ()
 
@@ -425,25 +431,29 @@ install (
     COMPONENT dev
 )
 
-install (
-    TARGETS ${VSOMEIP_NAME}-e2e
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-)
+if (ENABLE_E2E)
+    install (
+        TARGETS ${VSOMEIP_NAME}-e2e
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
+    )
+endif()
 
 if (VSOMEIP_ENABLE_MULTIPLE_ROUTING_MANAGERS EQUAL 0)
-install (
-    TARGETS ${VSOMEIP_NAME}-cfg
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-)
+    install (
+        TARGETS ${VSOMEIP_NAME}-cfg
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
+    )
 endif ()
 
-install (
-    TARGETS ${VSOMEIP_NAME}-sd
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
-)
+if (ENABLE_SD)
+    install (
+        TARGETS ${VSOMEIP_NAME}-sd
+        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib
+        RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT bin
+    )
+endif()
 
 if (VSOMEIP_ENABLE_COMPAT EQUAL 1)
 install (
@@ -475,14 +485,16 @@ install (
     COMPONENT dev
 )
 
+endif ()
+
 configure_file(vsomeip.pc.in ${PROJECT_BINARY_DIR}/vsomeip.pc @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/vsomeip.pc DESTINATION lib/pkgconfig)
 
-endif ()
-
-install (
-  FILES ${EXAMPLE_CONFIG_FILES} DESTINATION etc/vsomeip COMPONENT config
-)
+if (INSTALL_EXAMPLE_FILES)
+    install (
+      FILES ${EXAMPLE_CONFIG_FILES} DESTINATION etc/vsomeip COMPONENT config
+    )
+endif()
 
 # Add all targets to the build-tree export set
 export (TARGETS ${VSOMEIP_NAME} FILE "${PROJECT_BINARY_DIR}/vsomeip3Targets.cmake")
@@ -513,6 +525,7 @@ install (
 # Install the export set for use with the install-tree
 install (
     EXPORT vsomeip3Targets
+    NAMESPACE Covesa::
     DESTINATION "${INSTALL_CMAKE_DIR}"
     COMPONENT dev
 )
@@ -588,7 +601,7 @@ endif()
 ##############################################################################
 if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
     # build routing manager daemon (Non-Windows only)
-    if (NOT MSVC)
+    if (MSVC)
     add_subdirectory( examples/routingmanagerd )
     endif()
 

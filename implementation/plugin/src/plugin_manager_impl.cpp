@@ -10,7 +10,7 @@
 
 #ifdef _WIN32
     #ifndef _WINSOCKAPI_
-        #include <Windows.h>
+        #include <windows.h>
     #endif
 #else
     #include <dlfcn.h>
