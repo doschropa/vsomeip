@@ -485,10 +485,10 @@ install (
     COMPONENT dev
 )
 
+endif ()
+
 configure_file(vsomeip.pc.in ${PROJECT_BINARY_DIR}/vsomeip.pc @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/vsomeip.pc DESTINATION lib/pkgconfig)
-
-endif ()
 
 if (INSTALL_EXAMPLE_FILES)
     install (
@@ -525,6 +525,7 @@ install (
 # Install the export set for use with the install-tree
 install (
     EXPORT vsomeip3Targets
+    NAMESPACE Covesa::
     DESTINATION "${INSTALL_CMAKE_DIR}"
     COMPONENT dev
 )
