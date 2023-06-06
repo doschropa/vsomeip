@@ -38,6 +38,7 @@
 #include "../../security/include/security.hpp"
 #include "../../tracing/include/connector_impl.hpp"
 #include "../../utility/include/utility.hpp"
+#include "../../service_discovery/include/service_discovery_host.hpp"
 
 namespace vsomeip_v3 {
 
@@ -567,6 +568,13 @@ void application_impl::stop() {
 void application_impl::process(int _number) {
     (void)_number;
     VSOMEIP_ERROR << "application::process is not (yet) implemented.";
+}
+
+void application_impl::expire_services(const service_t service, const instance_t instance) {
+    const auto discovery = std::dynamic_pointer_cast<sd::service_discovery_host>(routing_);
+    if (discovery) {
+        discovery->expire_services(service, instance);
+    }
 }
 
 security_mode_e application_impl::get_security_mode() const {

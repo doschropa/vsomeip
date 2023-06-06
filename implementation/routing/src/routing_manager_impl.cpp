@@ -2661,6 +2661,32 @@ void routing_manager_impl::update_routing_info(std::chrono::milliseconds _elapse
     }
 }
 
+void routing_manager_impl::expire_services(const service_t service,
+                                           const instance_t instance) {
+    const services_t services = get_services_remote();
+    const auto services_map = services.find(service);
+    if (services_map == services.cend()) {
+        return;
+    }
+    const auto instances_map = services_map->second.find(instance);
+    if (instances_map == services_map->second.cend()) {
+        return;
+    }
+
+    std::shared_ptr<client_endpoint> cep = std::dynamic_pointer_cast<client_endpoint>(
+        instances_map->second->get_endpoint(false)
+    );
+    if (!cep) {
+    cep = std::dynamic_pointer_cast<client_endpoint>(
+        instances_map->second->get_endpoint(true));
+    }
+    boost::asio::ip::address address;
+    if (!cep || !cep->get_remote_address(address)) {
+        return;
+    }
+    expire_services(address);
+}
+
 void routing_manager_impl::expire_services(
         const boost::asio::ip::address &_address) {
     expire_services(_address, configuration::port_range_t(ANY_PORT, ANY_PORT),

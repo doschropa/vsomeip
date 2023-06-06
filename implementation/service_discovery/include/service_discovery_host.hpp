@@ -78,6 +78,7 @@ public:
     virtual std::shared_ptr<endpoint> find_or_create_remote_client(
             service_t _service, instance_t _instance, bool _reliable) = 0;
 
+    virtual void expire_services(const service_t service, const instance_t instance) = 0;
     virtual void expire_subscriptions(const boost::asio::ip::address &_address) = 0;
     virtual void expire_subscriptions(const boost::asio::ip::address &_address,
                                       std::uint16_t _port, bool _reliable) = 0;

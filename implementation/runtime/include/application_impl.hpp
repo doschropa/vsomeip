@@ -49,6 +49,8 @@ public:
     VSOMEIP_EXPORT void start();
     VSOMEIP_EXPORT void stop();
     VSOMEIP_EXPORT void process(int _number);
+    VSOMEIP_EXPORT void expire_services(const service_t service,
+                                      const instance_t instance) override;
 
     VSOMEIP_EXPORT security_mode_e get_security_mode() const;
 
