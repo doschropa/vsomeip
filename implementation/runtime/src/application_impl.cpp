@@ -1998,7 +1998,25 @@ void application_impl::invoke_handler(std::shared_ptr<sync_handler> &_handler) {
 
     if (is_dispatching_) {
         try {
-            _handler->handler_();
+            bool run_handler = true;
+
+            switch(_handler->handler_type_) {
+            // Only call handler if availabilityhandler is registered.
+            case handler_type_e::AVAILABILITY:
+            {
+                const std::lock_guard<std::mutex> lock(availability_mutex_);
+                const auto service_ = availability_.find( _handler->service_id_);
+                if (service_ != availability_.end() && service_->second.find(_handler->instance_id_) != service_->second.end()) {
+                    run_handler = false;
+                }
+                break;
+            }
+            default:
+                ;
+            }
+            if (run_handler){
+                _handler->handler_();
+            }
         } catch (const std::exception &e) {
             VSOMEIP_ERROR << "application_impl::invoke_handler caught exception: "
                     << e.what();
