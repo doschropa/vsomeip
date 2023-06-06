@@ -667,7 +667,7 @@ service_discovery_impl::is_reboot(
             }
 
             if (its_old_reboot_flag && _reboot_flag
-                    && its_old_session >= _session) {
+                    && its_old_session > _session) {
                 result = true;
             }
         }
