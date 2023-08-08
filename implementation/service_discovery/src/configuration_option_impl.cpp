@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <cstring>
+#include <vsomeip/internal/logger.hpp>
 
 #include "../include/configuration_option_impl.hpp"
 #include "../../message/include/deserializer.hpp"
@@ -94,39 +95,75 @@ bool configuration_option_impl::serialize(vsomeip_v3::serializer *_to) const {
 }
 
 bool configuration_option_impl::deserialize(vsomeip_v3::deserializer *_from) {
-    bool is_successful = option_impl::deserialize(_from);
-    uint8_t l_itemLength = 0;
-    std::string l_item(256, 0), l_key, l_value;
+    if (!option_impl::deserialize(_from)) {
+        VSOMEIP_WARNING << __func__ << "Could not deserialize Option header.";
+        return false;
+    }
 
-    do {
-        l_itemLength = 0;
-        l_key.clear();
-        l_value.clear();
-        l_item.assign(256, '\0');
+    // Length contains reserved byte.
+    const uint32_t string_length = length_ - 1;
+    std::string raw_string(string_length, 0);
 
-        is_successful = is_successful && _from->deserialize(l_itemLength);
-        if (l_itemLength > 0) {
-            is_successful = is_successful
-                    && _from->deserialize(l_item, static_cast<std::size_t>(l_itemLength));
+    if (string_length == 0) {
+        VSOMEIP_WARNING << "Configuration Option: Invalid String length.";
+        return false;
+    }
 
-            if (is_successful) {
-                size_t l_eqPos = l_item.find('='); //SWS_SD_00292
-                l_key = l_item.substr(0, l_eqPos);
+    if (!_from->deserialize(raw_string, string_length)) {
+        VSOMEIP_WARNING << "Configuration Option: Could not deserialize Configuration String.";
+        return false;
+    }
 
-                //if no "=" is found, no value is present for key (SWS_SD_00466)
-                if( l_eqPos != std::string::npos )
-                    l_value = l_item.substr(l_eqPos + 1);
-                if (configuration_.end() == configuration_.find(l_key)) {
-                    configuration_[l_key] = l_value;
-                } else {
-                    // TODO: log reason for failing deserialization
-                    is_successful = false;
-                }
+    uint32_t substring_size_index = 0;
+    uint8_t substring_size = static_cast<uint8_t>(raw_string[substring_size_index]);
+    while (substring_size != 0) {
+        const uint32_t substring_begin_index = substring_size_index + 1;
+        const uint32_t substring_end_index = substring_begin_index + substring_size;
+
+        if (substring_end_index > string_length) {
+            VSOMEIP_WARNING << "Configuration Option: Invalid Configuration substring size.";
+            return false;
+        }
+
+        const char* const sub_string = raw_string.data() + substring_begin_index;
+        uint32_t equal_sign_index = 0;
+        if (sub_string[0] == 0x3D) {
+            VSOMEIP_WARNING << "Configuration Option: Substring of Configuration Option starts with '='.";
+            return false;
+        }
+        for (uint32_t i = 0; i < substring_size; ++i) {
+            const char c = sub_string[i];
+            if (c < 0x20 || c > 0x7E) {
+                VSOMEIP_WARNING << "Configuration Option: Non ASCII character in Configuration Option key.";
+                return false;
+            }
+            if (c == 0x3D && equal_sign_index == 0) {
+                equal_sign_index = i;
+                break;
             }
         }
-    } while (is_successful && _from->get_remaining() > 0);
 
-    return is_successful;
+        // No '=' means that key is present.
+        if (equal_sign_index == 0) {
+            configuration_.emplace(std::make_pair(std::string(sub_string, substring_size), std::string()));
+        } else {
+            configuration_.emplace(
+                std::make_pair(
+                    std::string(sub_string, equal_sign_index),
+                    std::string(sub_string + equal_sign_index + 1, substring_size - equal_sign_index - 1)
+                )
+            );
+        }
+
+        substring_size_index = substring_end_index;
+        substring_size = static_cast<uint8_t>(raw_string[substring_size_index]);
+    }
+
+    if (substring_size_index < string_length - 1) {
+        VSOMEIP_WARNING << "Configuration Option: String length exceeds escape character.";
+    }
+
+    return true;
 }
 
 } // namespace sd
