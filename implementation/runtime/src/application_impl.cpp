@@ -2934,4 +2934,12 @@ application_impl::get_additional_data(const std::string &_plugin_name) {
     return std::map<std::string, std::string>();
 }
 
+std::multimap<std::string, configuration_option_value_t>
+application_impl::get_configuration_options(service_t _service, instance_t _instance) {
+    if (!routing_) {
+        return std::multimap<std::string, configuration_option_value_t>();
+    }
+    return routing_->get_configuration_options(_service, _instance);
+}
+
 } // namespace vsomeip_v3

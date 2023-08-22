@@ -14,6 +14,7 @@
 
 #include <vsomeip/export.hpp>
 #include <vsomeip/primitive_types.hpp>
+#include <vsomeip/structured_types.hpp>
 
 namespace vsomeip_v3 {
 
@@ -23,7 +24,8 @@ class serviceinfo {
 public:
     VSOMEIP_EXPORT serviceinfo(service_t _service, instance_t _instance,
             major_version_t _major, minor_version_t _minor,
-            ttl_t _ttl, bool _is_local);
+            ttl_t _ttl, bool _is_local,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration);
     VSOMEIP_EXPORT serviceinfo(const serviceinfo& _other);
     VSOMEIP_EXPORT ~serviceinfo();
 
@@ -52,6 +54,11 @@ public:
     VSOMEIP_EXPORT bool is_in_mainphase() const;
     VSOMEIP_EXPORT void set_is_in_mainphase(bool _in_mainphase);
 
+    VSOMEIP_EXPORT std::multimap<std::string, configuration_option_value_t>
+    get_configuration() const;
+    VSOMEIP_EXPORT void set_configuration(std::multimap<std::string,
+            configuration_option_value_t>&& _configuration);
+
 private:
     service_t service_;
     instance_t instance_;
@@ -71,6 +78,9 @@ private:
 
     bool is_local_;
     bool is_in_mainphase_;
+
+    mutable std::mutex configuration_mutex_;
+    std::multimap<std::string, configuration_option_value_t> configuration_;
 };
 
 }  // namespace vsomeip_v3

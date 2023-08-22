@@ -1104,6 +1104,19 @@ public:
     virtual void register_async_subscription_handler(
             service_t _service, instance_t _instance, eventgroup_t _eventgroup,
             async_subscription_handler_sec_t _handler) = 0;
+
+    /**
+     * \brief Returns map with all Configuration Option entries that were
+     * exposed over Service Discovery.
+     *
+     * \param _service Service identifier of service instance whose Configuration
+     * Option entires are to be requested.
+     * \param _instance Instance identifier of service instance whose configuration
+     * Options entries are to be requested.
+     * \return std::multimap<std::string, configuration_option_value_t>
+     */
+    virtual std::multimap<std::string, configuration_option_value_t> get_configuration_options(
+            service_t _service, instance_t _instance) = 0;
 };
 
 /** @} */

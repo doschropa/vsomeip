@@ -2898,4 +2898,9 @@ void routing_manager_client::on_suspend() {
     remote_subscriber_count_.clear();
 }
 
+std::multimap<std::string, configuration_option_value_t>
+routing_manager_client::get_configuration_options(service_t _service, instance_t _instance) {
+    return {};
+}
+
 }  // namespace vsomeip_v3

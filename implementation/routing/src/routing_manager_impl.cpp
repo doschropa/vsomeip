@@ -2140,7 +2140,8 @@ std::shared_ptr<endpoint> routing_manager_impl::create_service_discovery_endpoin
                 sd_info_ = std::make_shared<serviceinfo>(
                         VSOMEIP_SD_SERVICE, VSOMEIP_SD_INSTANCE,
                         ANY_MAJOR, ANY_MINOR, DEFAULT_TTL,
-                        false); // false, because we do _not_ want to announce it...
+                        false, // false, because we do _not_ want to announce it...
+                        std::multimap<std::string, configuration_option_value_t>());
                 sd_info_->set_endpoint(its_service_endpoint, _reliable);
                 its_service_endpoint->add_default_target(VSOMEIP_SD_SERVICE,
                         _address, _port);
@@ -2322,7 +2323,8 @@ void routing_manager_impl::add_routing_info(
         const boost::asio::ip::address &_reliable_address,
         uint16_t _reliable_port,
         const boost::asio::ip::address &_unreliable_address,
-        uint16_t _unreliable_port) {
+        uint16_t _unreliable_port,
+        std::multimap<std::string, configuration_option_value_t>&& _configuration) {
 
     std::lock_guard<std::mutex> its_lock(routing_state_mutex_);
     if (routing_state_ == routing_state_e::RS_SUSPENDED) {
@@ -2343,7 +2345,15 @@ void routing_manager_impl::add_routing_info(
                 && its_unicast_address == _unreliable_address)
             is_local = true;
 
-        its_info = create_service_info(_service, _instance, _major, _minor, _ttl, is_local);
+        its_info = create_service_info(
+            _service,
+            _instance,
+            _major,
+            _minor,
+            _ttl,
+            is_local,
+            std::move(_configuration)
+        );
         init_service_info(_service, _instance, is_local);
     } else if (its_info->is_local()) {
         // We received a service info for a service which is already offered locally
@@ -2367,6 +2377,7 @@ void routing_manager_impl::add_routing_info(
         return;
     } else {
         its_info->set_ttl(_ttl);
+        its_info->set_configuration(std::move(_configuration));
     }
 
     // Check whether remote services are unchanged
@@ -2828,7 +2839,8 @@ void routing_manager_impl::init_routing_info() {
             add_routing_info(i.first, i.second,
                     DEFAULT_MAJOR, DEFAULT_MINOR, DEFAULT_TTL,
                     its_address, its_reliable_port,
-                    its_address, its_unreliable_port);
+                    its_address, its_unreliable_port,
+                    std::multimap<std::string, configuration_option_value_t>());
 
             if(its_reliable_port != ILLEGAL_PORT) {
                 ep_mgr_impl_->find_or_create_remote_client(
@@ -4936,6 +4948,16 @@ routing_manager_impl::remove_subscriptions(port_t _local_port,
             }
         }
     }
+}
+
+std::multimap<std::string, configuration_option_value_t>
+routing_manager_impl::get_configuration_options(service_t _service, instance_t _instance) {
+    const auto service = find_service(_service, _instance);
+    if (!service) {
+        return std::multimap<std::string, configuration_option_value_t>();
+    }
+
+    return service->get_configuration();
 }
 
 } // namespace vsomeip_v3

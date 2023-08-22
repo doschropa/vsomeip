@@ -120,7 +120,7 @@ bool routing_manager_base::offer_service(client_t _client,
         }
     } else {
         its_info = create_service_info(_service, _instance, _major, _minor,
-                DEFAULT_TTL, true);
+                DEFAULT_TTL, true, std::multimap<std::string, configuration_option_value_t>());
     }
     {
         std::lock_guard<std::mutex> its_lock(events_mutex_);
@@ -912,10 +912,11 @@ bool routing_manager_base::send(client_t _client,
 // ********************************* PROTECTED **************************************
 std::shared_ptr<serviceinfo> routing_manager_base::create_service_info(
         service_t _service, instance_t _instance, major_version_t _major,
-        minor_version_t _minor, ttl_t _ttl, bool _is_local_service) {
+        minor_version_t _minor, ttl_t _ttl, bool _is_local_service,
+        std::multimap<std::string, configuration_option_value_t>&& _configuration) {
     std::shared_ptr<serviceinfo> its_info =
             std::make_shared<serviceinfo>(_service, _instance,
-                    _major, _minor, _ttl, _is_local_service);
+                    _major, _minor, _ttl, _is_local_service, std::move(_configuration));
     {
         std::lock_guard<std::mutex> its_lock(services_mutex_);
         services_[_service][_instance] = its_info;

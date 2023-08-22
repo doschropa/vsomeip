@@ -16,6 +16,7 @@
 #include "../include/deserializer.hpp"
 #include "../include/enumeration_types.hpp"
 #include "../include/eventgroupentry_impl.hpp"
+#include "../include/configuration_option_impl.hpp"
 #include "../include/ipv4_option_impl.hpp"
 #include "../include/ipv6_option_impl.hpp"
 #include "../include/selective_option_impl.hpp"
@@ -1286,6 +1287,8 @@ service_discovery_impl::process_serviceentry(
         bool _received_via_mcast,
         const sd_acceptance_state_t& _sd_ac_state) {
 
+    std::multimap<std::string, configuration_option_value_t> its_configuration_options;
+
     // Read service info from entry
     entry_type_e its_type = _entry->get_type();
     service_t its_service = _entry->get_service();
@@ -1348,8 +1351,13 @@ service_discovery_impl::process_serviceentry(
                 case option_type_e::IP4_MULTICAST:
                 case option_type_e::IP6_MULTICAST:
                     break;
-                case option_type_e::CONFIGURATION:
+                case option_type_e::CONFIGURATION: {
+                    std::shared_ptr <configuration_option_impl> its_configuration_option =
+                            std::dynamic_pointer_cast< configuration_option_impl
+                                    > (its_option);
+                    its_configuration_options = its_configuration_option->extract_options();
                     break;
+                }
                 case option_type_e::UNKNOWN:
                 default:
                     VSOMEIP_ERROR << __func__ << ": Unsupported service option";
@@ -1370,7 +1378,7 @@ service_discovery_impl::process_serviceentry(
                         its_major, its_minor, its_ttl,
                         its_reliable_address, its_reliable_port,
                         its_unreliable_address, its_unreliable_port, _resubscribes,
-                        _received_via_mcast, _sd_ac_state);
+                        _received_via_mcast, _sd_ac_state, std::move(its_configuration_options));
                 break;
             case entry_type_e::UNKNOWN:
             default:
@@ -1402,7 +1410,8 @@ service_discovery_impl::process_offerservice_serviceentry(
         const boost::asio::ip::address &_unreliable_address,
         uint16_t _unreliable_port,
         std::vector<std::shared_ptr<message_impl> > &_resubscribes,
-        bool _received_via_mcast, const sd_acceptance_state_t& _sd_ac_state) {
+        bool _received_via_mcast, const sd_acceptance_state_t& _sd_ac_state,
+        std::multimap<std::string, configuration_option_value_t>&& _configuration) {
     std::shared_ptr < runtime > its_runtime = runtime_.lock();
     if (!its_runtime)
         return;
@@ -1573,7 +1582,7 @@ service_discovery_impl::process_offerservice_serviceentry(
                             _major, _minor,
                             _ttl * get_ttl_factor(_service, _instance, ttl_factor_offers_),
                             _reliable_address, _reliable_port,
-                            _unreliable_address, _unreliable_port);
+                            _unreliable_address, _unreliable_port, std::move(_configuration));
 }
 
 void

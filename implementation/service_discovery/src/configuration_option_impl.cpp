@@ -57,7 +57,7 @@ void configuration_option_impl::add_item(const std::string &_key,
     if (!verify_key(_key)) {
         return;
     }
-    configuration_.emplace(std::make_pair(_key, configuration_value{false,_value}));
+    configuration_.emplace(std::make_pair(_key, configuration_option_value_t{false,_value}));
     length_ = uint16_t(length_ + _key.length() + _value.length() + 2u); // +2 for the '=' and length
 }
 
@@ -65,7 +65,7 @@ void configuration_option_impl::add_item(const std::string &_key) {
     if (!verify_key(_key)) {
         return;
     }
-    configuration_.emplace(std::make_pair(_key, configuration_value{true, std::string()}));
+    configuration_.emplace(std::make_pair(_key, configuration_option_value_t{true, std::string()}));
     length_ = uint16_t(length_ + _key.length() + 1u); // +1 for the 'length
 }
 
@@ -74,7 +74,7 @@ void configuration_option_impl::remove_item(const std::string &_key) {
     if (it != configuration_.end()) {
         length_ = uint16_t(length_ - (it->first.length() + it->second.value_.length() + 1u));
         // +1 for the '=' sign.
-        if (!it->second.only_present_)
+        if (!it->second.is_only_present_)
             length_++;
         configuration_.erase(it);
     }
@@ -123,7 +123,7 @@ bool configuration_option_impl::has_value(const std::string &_key, int occurence
 
     auto it = iterators.first;
     std::advance(it, occurence);
-    if (it->second.only_present_) {
+    if (it->second.is_only_present_) {
         return false;
     }
 
@@ -134,13 +134,18 @@ uint configuration_option_impl::is_present(const std::string &_key) const {
     return static_cast<uint>(configuration_.count(_key));
 }
 
+std::multimap<std::string, configuration_option_value_t>&&
+configuration_option_impl::extract_options() {
+    return std::move(configuration_);
+}
+
 bool configuration_option_impl::serialize(vsomeip_v3::serializer *_to) const {
     bool is_successful;
     std::string configuration_string;
 
     for (auto i = configuration_.begin(); i != configuration_.end(); ++i) {
         // If key is just present, there will not be any '=' sign or value at all.
-        if (i->second.only_present_) {
+        if (i->second.is_only_present_) {
             configuration_string.push_back(static_cast<char>(i->first.length()));
             configuration_string.append(i->first);
             continue;
@@ -217,7 +222,7 @@ bool configuration_option_impl::deserialize(vsomeip_v3::deserializer *_from) {
             configuration_.emplace(
                 std::make_pair(
                     std::string(sub_string, substring_size),
-                    configuration_value{
+                    configuration_option_value_t{
                         true,
                         std::string()
                     }
@@ -227,7 +232,7 @@ bool configuration_option_impl::deserialize(vsomeip_v3::deserializer *_from) {
             configuration_.emplace(
                 std::make_pair(
                     std::string(sub_string, equal_sign_index),
-                    configuration_value{
+                    configuration_option_value_t{
                         false,
                         std::string(
                             sub_string + equal_sign_index + 1,
@@ -248,11 +253,6 @@ bool configuration_option_impl::deserialize(vsomeip_v3::deserializer *_from) {
 
     return true;
 }
-
-bool configuration_option_impl::configuration_value::operator==(const configuration_value& other) const {
-    return only_present_ == other.only_present_ && value_ == other.value_;
-}
-
 }
 
 // namespace sd
