@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <vsomeip/structured_types.hpp>
 
 #include "option_impl.hpp"
 
@@ -20,13 +21,6 @@ class deserializer;
 namespace sd {
 
 class configuration_option_impl: public option_impl {
-
-    struct configuration_value {
-        bool only_present_;
-        std::string value_;
-
-        bool operator==(const configuration_value& other) const;
-    };
 
 public:
     configuration_option_impl();
@@ -44,12 +38,13 @@ public:
     uint is_present(const std::string &_key) const;
     bool has_key(const std::string &_key, int occurence = 0) const;
     bool has_value(const std::string &_key, int occurence = 0) const;
+    std::multimap<std::string, configuration_option_value_t>&& extract_options();
 
     bool serialize(vsomeip_v3::serializer *_to) const;
     bool deserialize(vsomeip_v3::deserializer *_from);
 
 private:
-    std::multimap<std::string, configuration_value> configuration_;
+    std::multimap<std::string, configuration_option_value_t> configuration_;
 };
 
 } // namespace sd

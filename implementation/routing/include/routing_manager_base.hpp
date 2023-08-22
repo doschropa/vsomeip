@@ -168,7 +168,8 @@ public:
 protected:
     std::shared_ptr<serviceinfo> create_service_info(service_t _service,
             instance_t _instance, major_version_t _major,
-            minor_version_t _minor, ttl_t _ttl, bool _is_local_service);
+            minor_version_t _minor, ttl_t _ttl, bool _is_local_service,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration);
 
     void clear_service_info(service_t _service, instance_t _instance, bool _reliable);
     services_t get_services() const;

@@ -220,7 +220,8 @@ public:
             const boost::asio::ip::address &_reliable_address,
             uint16_t _reliable_port,
             const boost::asio::ip::address &_unreliable_address,
-            uint16_t _unreliable_port);
+            uint16_t _unreliable_port,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration);
     void del_routing_info(service_t _service, instance_t _instance,
             bool _has_reliable, bool _has_unreliable);
     void update_routing_info(std::chrono::milliseconds _elapsed);
@@ -309,6 +310,9 @@ public:
     void remove_subscriptions(port_t _local_port,
             const boost::asio::ip::address &_remote_address,
             port_t _remote_port);
+
+    std::multimap<std::string, configuration_option_value_t>
+    get_configuration_options(service_t _service, instance_t _instance);
 
 private:
     bool offer_service(client_t _client,

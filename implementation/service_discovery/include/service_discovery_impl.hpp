@@ -107,6 +107,7 @@ public:
     void register_sd_acceptance_handler(const sd_acceptance_handler_t &_handler);
     void register_reboot_notification_handler(
              const reboot_notification_handler_t &_handler);
+
 private:
     std::pair<session_t, bool> get_session(const boost::asio::ip::address &_address);
     void increment_session(const boost::asio::ip::address &_address);
@@ -160,7 +161,8 @@ private:
             const boost::asio::ip::address &_unreliable_address,
             uint16_t _unreliable_port,
             std::vector<std::shared_ptr<message_impl> > &_resubscribes,
-            bool _received_via_mcast, const sd_acceptance_state_t& _sd_ac_state);
+            bool _received_via_mcast, const sd_acceptance_state_t& _sd_ac_state,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration);
     void send_offer_service(
             const std::shared_ptr<const serviceinfo> &_info, service_t _service,
             instance_t _instance, major_version_t _major, minor_version_t _minor,

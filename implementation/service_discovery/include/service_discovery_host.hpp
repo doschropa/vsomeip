@@ -22,6 +22,7 @@
 #include "../../routing/include/types.hpp"
 
 #include <vsomeip/message.hpp>
+#include <vsomeip/structured_types.hpp>
 
 namespace vsomeip_v3 {
 
@@ -52,11 +53,12 @@ public:
             const byte_t *_data, uint32_t _size, uint16_t _sd_port) = 0;
 
     virtual void add_routing_info(service_t _service, instance_t _instance,
-            major_version_t _major, minor_version_t _minor, ttl_t _ttl,
+            major_version_t _major, minor_version_t _minor, ttl_t _ttWl,
             const boost::asio::ip::address &_reliable_address,
             uint16_t _reliable_port,
             const boost::asio::ip::address &_unreliable_address,
-            uint16_t _unreliable_port) = 0;
+            uint16_t _unreliable_port,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration) = 0;
 
     virtual void del_routing_info(service_t _service, instance_t _instance,
             bool _has_reliable, bool _has_unreliable) = 0;

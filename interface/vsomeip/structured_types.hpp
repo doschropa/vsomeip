@@ -9,6 +9,8 @@
 #include <chrono>
 #include <map>
 
+#include "primitive_types.hpp"
+
 namespace vsomeip_v3 {
 
 // Messages are forwarded either because their value differs from the
@@ -59,6 +61,15 @@ struct debounce_filter_t {
     bool on_change_resets_interval_;
     int64_t interval_;
     std::map<std::size_t, byte_t> ignore_;
+};
+
+struct configuration_option_value_t {
+    bool is_only_present_;
+    std::string value_;
+
+    bool operator==(const configuration_option_value_t& other) const {
+        return is_only_present_ == other.is_only_present_ && value_ == other.value_;
+    }
 };
 
 } // namespace vsomeip_v3

@@ -118,6 +118,9 @@ public:
 
     void send_get_offered_services_info(client_t _client, offer_type_e _offer_type);
 
+    std::multimap<std::string, configuration_option_value_t>
+    get_configuration_options(service_t _service, instance_t _instance);
+
 private:
     void assign_client();
     void register_application();

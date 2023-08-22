@@ -9,7 +9,8 @@ namespace vsomeip_v3 {
 
 serviceinfo::serviceinfo(service_t _service, instance_t _instance,
         major_version_t _major, minor_version_t _minor,
-        ttl_t _ttl, bool _is_local)
+        ttl_t _ttl, bool _is_local,
+        std::multimap<std::string, configuration_option_value_t>&& _configuration)
     : service_(_service),
       instance_(_instance),
       major_(_major),
@@ -18,7 +19,8 @@ serviceinfo::serviceinfo(service_t _service, instance_t _instance,
       reliable_(nullptr),
       unreliable_(nullptr),
       is_local_(_is_local),
-      is_in_mainphase_(false) {
+      is_in_mainphase_(false),
+      configuration_(std::move(_configuration)) {
 
     std::chrono::seconds ttl = static_cast<std::chrono::seconds> (_ttl);
     ttl_ = std::chrono::duration_cast<std::chrono::milliseconds>(ttl);
@@ -34,7 +36,8 @@ serviceinfo::serviceinfo(const serviceinfo& _other) :
     unreliable_(_other.unreliable_),
     requesters_(_other.requesters_),
     is_local_(_other.is_local_),
-    is_in_mainphase_(_other.is_in_mainphase_)
+    is_in_mainphase_(_other.is_in_mainphase_),
+    configuration_(_other.get_configuration())
     {}
 
 serviceinfo::~serviceinfo() {
@@ -118,6 +121,18 @@ bool serviceinfo::is_in_mainphase() const {
 
 void serviceinfo::set_is_in_mainphase(bool _in_mainphase) {
     is_in_mainphase_ = _in_mainphase;
+}
+
+std::multimap<std::string, configuration_option_value_t>
+serviceinfo::get_configuration() const {
+    const std::lock_guard<std::mutex> lock(configuration_mutex_);
+    return configuration_;
+}
+
+void serviceinfo::set_configuration(std::multimap<std::string,
+                                    configuration_option_value_t>&& _configuration) {
+    const std::lock_guard<std::mutex> lock(configuration_mutex_);
+    configuration_ = _configuration;
 }
 
 }  // namespace vsomeip_v3

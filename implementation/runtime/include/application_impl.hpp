@@ -226,6 +226,9 @@ public:
                 service_t _service, instance_t _instance, eventgroup_t _eventgroup,
                 async_subscription_handler_sec_t _handler);
 
+    VSOMEIP_EXPORT std::multimap<std::string, configuration_option_value_t> get_configuration_options(
+            service_t _service, instance_t _instance);
+
 private:
     //
     // Types
