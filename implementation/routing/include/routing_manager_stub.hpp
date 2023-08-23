@@ -26,6 +26,7 @@
 
 #include <vsomeip/handler.hpp>
 #include <vsomeip/vsomeip_sec.h>
+#include <vsomeip/structured_types.hpp>
 
 #include "types.hpp"
 #include "../include/routing_host.hpp"
@@ -63,7 +64,8 @@ public:
             std::uint16_t _remote_port);
 
     void on_offer_service(client_t _client, service_t _service,
-            instance_t _instance, major_version_t _major, minor_version_t _minor);
+            instance_t _instance, major_version_t _major, minor_version_t _minor,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration);
     void on_stop_offer_service(client_t _client, service_t _service,
             instance_t _instance,  major_version_t _major, minor_version_t _minor);
 
@@ -157,7 +159,8 @@ private:
     void inform_requesters(client_t _hoster, service_t _service,
             instance_t _instance, major_version_t _major,
             minor_version_t _minor, protocol::routing_info_entry_type_e _entry,
-            bool _inform_service);
+            bool _inform_service,
+            std::multimap<std::string, configuration_option_value_t>&& _configuration);
 
     void broadcast_ping() const;
     void on_pong(client_t _client);

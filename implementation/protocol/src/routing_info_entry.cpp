@@ -109,6 +109,29 @@ routing_info_entry::serialize(std::vector<byte_t> &_buffer,
             _index += sizeof(s.major_);
             std::memcpy(&_buffer[_index], &s.minor_, sizeof(s.minor_));
             _index += sizeof(s.minor_);
+
+            if (type_ == routing_info_entry_type_e::RIE_ADD_SERVICE_INSTANCE) {
+                for (const auto& its_conf_entry: s.configuration_) {         
+                    std::string its_entry_buffer(its_conf_entry.first);
+                    if (!its_conf_entry.second.is_only_present_) {
+                        its_entry_buffer += '=' + its_conf_entry.second.value_;
+                    }
+
+                    if (its_entry_buffer.size() > std::numeric_limits<uint8_t>::max()) {
+                        _error = error_e::ERROR_NOT_ENOUGH_BYTES;
+                        return;
+                    }
+
+                    _buffer[_index] = static_cast<uint8_t>(its_entry_buffer.size());
+                    _index += sizeof(uint8_t);
+
+                    std::memcpy(&_buffer[_index], its_entry_buffer.c_str(), its_entry_buffer.size());
+                    _index += its_entry_buffer.size();
+                }
+
+                _buffer[_index] = 0;
+                _index += sizeof(uint8_t);
+            }
         }
     }
 }
@@ -209,6 +232,56 @@ routing_info_entry::deserialize(const std::vector<byte_t> &_buffer,
             std::memcpy(&its_service.minor_, &_buffer[_index], sizeof(its_service.minor_));
             _index += sizeof(its_service.minor_);
 
+            if (type_ == routing_info_entry_type_e::RIE_ADD_SERVICE_INSTANCE){
+                std::multimap<std::string, configuration_option_value_t> its_configuration;
+                while (_buffer[_index]) {
+                    const uint8_t entry_length = _buffer[_index];
+                    const size_t string_begin_index = ++_index;
+                    _index += entry_length;
+                    uint8_t equals_sign_idx = 0;
+                    for (uint8_t char_idx = 0; char_idx < entry_length; ++char_idx) {
+                        if (_buffer[string_begin_index + char_idx] == '=') {
+                            equals_sign_idx = char_idx;
+                            break;
+                        }
+                    }
+                    if (equals_sign_idx == 0) {
+                        its_configuration.emplace(
+                            std::make_pair(
+                                std::string(
+                                    reinterpret_cast<const char*>(_buffer.data() + string_begin_index),
+                                    entry_length
+                                ),
+                                configuration_option_value_t{
+                                    true,
+                                    std::string()
+                                }
+                            )
+                        );
+                    } else {
+                        its_configuration.emplace(
+                            std::make_pair(
+                                std::string(
+                                    reinterpret_cast<const char*>(_buffer.data() + string_begin_index),
+                                    equals_sign_idx
+                                ),
+                                configuration_option_value_t{
+                                    false,
+                                    std::string(
+                                        reinterpret_cast<const char*>(
+                                            _buffer.data() + string_begin_index + equals_sign_idx + 1
+                                        ),
+                                        entry_length - equals_sign_idx - 1
+                                    )
+                                }
+                            )
+                        );
+                    }
+                }
+                _index++;
+                its_service.configuration_ = std::move(its_configuration);
+            }
+
             services_.emplace_back(its_service);
         }
     }
@@ -247,6 +320,19 @@ routing_info_entry::get_size() const {
         its_size += (services_.size() *
                 (sizeof(service_t) + sizeof(instance_t) +
                  sizeof(major_version_t) + sizeof(minor_version_t)));
+
+        // configuration option
+        if (type_ == routing_info_entry_type_e::RIE_ADD_SERVICE_INSTANCE) {
+            for (const auto& service: services_) {
+                its_size += sizeof(uint8_t);
+                for (const auto& its_conf_entry: service.configuration_) {
+                    its_size += sizeof(uint8_t);
+                    its_size += its_conf_entry.first.size();
+                    if (!its_conf_entry.second.is_only_present_)
+                        its_size += its_conf_entry.second.value_.size() + 1;
+                }
+            }
+        }
     }
 
     return its_size;

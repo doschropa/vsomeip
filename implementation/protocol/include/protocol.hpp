@@ -8,6 +8,7 @@
 
 #include <vsomeip/constants.hpp>
 #include <vsomeip/primitive_types.hpp>
+#include <vsomeip/structured_types.hpp>
 
 namespace vsomeip_v3 {
 namespace protocol {
@@ -81,6 +82,8 @@ struct service {
     instance_t instance_;
     major_version_t major_;
     minor_version_t minor_;
+    std::multimap<std::string, configuration_option_value_t> configuration_;
+
 
     service()
         : service_(ANY_SERVICE),
@@ -90,11 +93,13 @@ struct service {
     }
 
     service(service_t _service, instance_t _instance,
-            major_version_t _major, minor_version_t _minor)
+            major_version_t _major, minor_version_t _minor,
+            std::multimap<std::string, configuration_option_value_t> _configuration)
         : service_(_service),
           instance_(_instance),
           major_(_major),
-          minor_(_minor) {
+          minor_(_minor),
+          configuration_(_configuration) {
     }
 
     bool operator<(const service &_other) const {
