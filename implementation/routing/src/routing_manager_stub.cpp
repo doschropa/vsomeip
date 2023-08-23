@@ -905,7 +905,8 @@ routing_manager_stub::on_offered_service_request(client_t _client,
                             || (_offer_type == offer_type_e::OT_REMOTE && has_port)) {
 
                         protocol::service its_service(s.first, i.first,
-                                i.second.first, i.second.second);
+                                i.second.first, i.second.second,
+                                std::multimap<std::string, configuration_option_value_t>());
                         its_command.add_service(its_service);
                     }
                 }
@@ -1083,7 +1084,8 @@ routing_manager_stub::on_net_state_change(
 #endif // __linux__ || ANDROID
 
 void routing_manager_stub::on_offer_service(client_t _client,
-        service_t _service, instance_t _instance, major_version_t _major, minor_version_t _minor) {
+        service_t _service, instance_t _instance, major_version_t _major, minor_version_t _minor,
+        std::multimap<std::string, configuration_option_value_t>&& _configuration) {
     if (_client == host_->get_client()) {
         create_local_receiver();
     }
@@ -1094,7 +1096,8 @@ void routing_manager_stub::on_offer_service(client_t _client,
         distribute_credentials(_client, _service, _instance);
     }
     inform_requesters(_client, _service, _instance, _major, _minor,
-            protocol::routing_info_entry_type_e::RIE_ADD_SERVICE_INSTANCE, true);
+            protocol::routing_info_entry_type_e::RIE_ADD_SERVICE_INSTANCE, true,
+            std::move(_configuration));
 }
 
 void routing_manager_stub::on_stop_offer_service(client_t _client,
@@ -1113,14 +1116,16 @@ void routing_manager_stub::on_stop_offer_service(client_t _client,
                         found_client->second.second.erase(_service);
                     }
                     inform_requesters(_client, _service, _instance, _major, _minor,
-                            protocol::routing_info_entry_type_e::RIE_DELETE_SERVICE_INSTANCE, false);
+                            protocol::routing_info_entry_type_e::RIE_DELETE_SERVICE_INSTANCE, false,
+                            std::multimap<std::string, configuration_option_value_t>());
                 } else if( _major == DEFAULT_MAJOR && _minor == DEFAULT_MINOR) {
                     found_service->second.erase(_instance);
                     if (0 == found_service->second.size()) {
                         found_client->second.second.erase(_service);
                     }
                     inform_requesters(_client, _service, _instance, _major, _minor,
-                            protocol::routing_info_entry_type_e::RIE_DELETE_SERVICE_INSTANCE, false);
+                            protocol::routing_info_entry_type_e::RIE_DELETE_SERVICE_INSTANCE, false,
+                            std::multimap<std::string, configuration_option_value_t>());
                 }
             }
         }
@@ -1240,7 +1245,8 @@ void routing_manager_stub::distribute_credentials(client_t _hoster, service_t _s
 
 void routing_manager_stub::inform_requesters(client_t _hoster, service_t _service,
         instance_t _instance, major_version_t _major, minor_version_t _minor,
-        protocol::routing_info_entry_type_e _type, bool _inform_service) {
+        protocol::routing_info_entry_type_e _type, bool _inform_service,
+        std::multimap<std::string, configuration_option_value_t>&& _configuration) {
 
     boost::asio::ip::address its_address;
     port_t its_port;
@@ -1278,7 +1284,7 @@ void routing_manager_stub::inform_requesters(client_t _hoster, service_t _servic
                         its_entry.set_address(its_address);
                         its_entry.set_port(its_port);
                     }
-                    its_entry.add_service({ _service, _instance, _major, _minor} );
+                    its_entry.add_service({ _service, _instance, _major, _minor, std::move(_configuration) });
                     send_client_routing_info(its_client.first, its_entry);
                 }
             }
@@ -1931,7 +1937,8 @@ void routing_manager_stub::handle_requests(const client_t _client, std::set<prot
                                     its_entry.set_port(its_port);
                                 }
                                 its_entry.add_service({ request.service_, instance.first,
-                                        instance.second.first, instance.second.second });
+                                        instance.second.first, instance.second.second,
+                                        host_->get_configuration_options(request.service_, request.instance_) });
                                 its_entries.emplace_back(its_entry);
                             }
                         }
@@ -1975,7 +1982,8 @@ void routing_manager_stub::handle_requests(const client_t _client, std::set<prot
                                 its_entry.set_port(its_port);
                             }
                             its_entry.add_service({ request.service_, request.instance_,
-                                    found_instance->second.first, found_instance->second.second });
+                                    found_instance->second.first, found_instance->second.second,
+                                    host_->get_configuration_options(request.service_, request.instance_) });
                             its_entries.emplace_back(its_entry);
                         }
                     }

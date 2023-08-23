@@ -132,6 +132,9 @@ public:
     virtual void remove_guest(client_t _client) = 0;
 
     virtual void clear_local_services() = 0;
+
+    virtual std::multimap<std::string, configuration_option_value_t>
+    get_configuration_options(service_t _service, instance_t _instance) = 0;
 };
 
 } // namespace vsomeip_v3

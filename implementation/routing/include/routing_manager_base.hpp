@@ -13,6 +13,7 @@
 
 #include <vsomeip/constants.hpp>
 #include <vsomeip/vsomeip_sec.h>
+#include <vsomeip/structured_types.hpp>
 
 #include "types.hpp"
 #include "event.hpp"
@@ -278,7 +279,8 @@ protected:
 
     mutable std::mutex local_services_mutex_;
     typedef std::map<service_t, std::map<instance_t,
-            std::tuple<major_version_t, minor_version_t, client_t>>> local_services_map_t;
+            std::tuple<major_version_t, minor_version_t, client_t,
+            std::multimap<std::string, configuration_option_value_t>>>> local_services_map_t;
     local_services_map_t local_services_;
     std::map<service_t, std::map<instance_t, std::set<client_t> > > local_services_history_;
 

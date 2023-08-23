@@ -309,7 +309,13 @@ bool routing_manager_client::offer_service(client_t _client,
         if (state_ == inner_state_type_e::ST_REGISTERED) {
             send_offer_service(_client, _service, _instance, _major, _minor);
         }
-        protocol::service offer(_service, _instance, _major, _minor );
+        protocol::service offer(
+            _service,
+            _instance,
+            _major,
+            _minor,
+            std::multimap<std::string, configuration_option_value_t>()
+        );
         pending_offers_.insert(offer);
     }
     return true;
@@ -407,7 +413,13 @@ void routing_manager_client::request_service(client_t _client,
     {
         std::lock_guard<std::mutex> its_lock(state_mutex_);
         size_t request_debouncing_time = configuration_->get_request_debouncing(host_->get_name());
-        protocol::service request = { _service, _instance, _major, _minor };
+        protocol::service request = {
+            _service,
+            _instance,
+            _major,
+            _minor,
+            std::multimap<std::string, configuration_option_value_t>()
+        };
         if (!request_debouncing_time) {
             if (state_ == inner_state_type_e::ST_REGISTERED) {
                 std::set<protocol::service> requests;
@@ -1859,6 +1871,7 @@ void routing_manager_client::on_routing_info(
                     const auto its_instance(s.instance_);
                     const auto its_major(s.major_);
                     const auto its_minor(s.minor_);
+                    const auto its_configuration(std::move(s.configuration_));
 
                     {
                         std::lock_guard<std::mutex> its_lock(local_services_mutex_);
@@ -1872,7 +1885,7 @@ void routing_manager_client::on_routing_info(
                         }
 
                         local_services_[its_service][its_instance]
-                            = std::make_tuple(its_major, its_minor, its_client);
+                            = std::make_tuple(its_major, its_minor, its_client, std::move(its_configuration));
                     }
                     {
                         std::lock_guard<std::mutex> its_lock(state_mutex_);
@@ -2900,7 +2913,17 @@ void routing_manager_client::on_suspend() {
 
 std::multimap<std::string, configuration_option_value_t>
 routing_manager_client::get_configuration_options(service_t _service, instance_t _instance) {
-    return {};
+    const std::lock_guard<std::mutex> its_lock(local_services_mutex_);
+    const auto instances = local_services_.find(_service);
+    if (instances == local_services_.end())
+        return std::multimap<std::string, configuration_option_value_t>();
+
+    const auto instance = instances->second.find(_instance);
+    if (instance == instances->second.end()) {
+        return std::multimap<std::string, configuration_option_value_t>();
+    }
+
+    return std::get<3>(instance->second);
 }
 
 }  // namespace vsomeip_v3

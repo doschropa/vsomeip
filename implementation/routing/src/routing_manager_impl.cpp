@@ -480,7 +480,14 @@ bool routing_manager_impl::offer_service(client_t _client,
         send_pending_subscriptions(_service, _instance, _major);
     }
     if (stub_)
-        stub_->on_offer_service(_client, _service, _instance, _major, _minor);
+        stub_->on_offer_service(
+            _client,
+            _service,
+            _instance,
+            _major,
+            _minor,
+            std::multimap<std::string, configuration_option_value_t>()
+        );
     on_availability(_service, _instance, availability_state_e::AS_AVAILABLE, _major, _minor);
     erase_offer_command(_service, _instance);
     return true;
@@ -601,7 +608,12 @@ void routing_manager_impl::request_service(client_t _client, service_t _service,
         if (stub_)
             stub_->create_local_receiver();
 
-        protocol::service its_request(_service, _instance, _major, _minor);
+        protocol::service its_request(
+            _service,
+            _instance,
+            _major,
+            _minor,
+            std::multimap<std::string, configuration_option_value_t>());
         std::set<protocol::service> requests;
         requests.insert(its_request);
 
@@ -2352,7 +2364,7 @@ void routing_manager_impl::add_routing_info(
             _minor,
             _ttl,
             is_local,
-            std::move(_configuration)
+            std::multimap<std::string, configuration_option_value_t>(_configuration)
         );
         init_service_info(_service, _instance, is_local);
     } else if (its_info->is_local()) {
@@ -2377,7 +2389,9 @@ void routing_manager_impl::add_routing_info(
         return;
     } else {
         its_info->set_ttl(_ttl);
-        its_info->set_configuration(std::move(_configuration));
+        its_info->set_configuration(
+            std::multimap<std::string, configuration_option_value_t>(_configuration)
+        );
     }
 
     // Check whether remote services are unchanged
@@ -2445,7 +2459,8 @@ void routing_manager_impl::add_routing_info(
                     stub_->on_offer_service(VSOMEIP_ROUTING_CLIENT,
                             _service, _instance,
                             its_info->get_major(),
-                            its_info->get_minor());
+                            its_info->get_minor(),
+                            std::multimap<std::string, configuration_option_value_t>(_configuration));
                     if (discovery_) {
                         discovery_->on_endpoint_connected(
                                 _service, _instance, ep);
@@ -2496,7 +2511,13 @@ void routing_manager_impl::add_routing_info(
                 on_availability(_service, _instance,
                         availability_state_e::AS_AVAILABLE, _major, _minor);
                 if (stub_)
-                    stub_->on_offer_service(VSOMEIP_ROUTING_CLIENT, _service, _instance, _major, _minor);
+                    stub_->on_offer_service(
+                        VSOMEIP_ROUTING_CLIENT,
+                        _service,
+                        _instance,
+                        _major,
+                        _minor,
+                        std::move(_configuration));
             } else {
                 on_availability(_service, _instance,
                         availability_state_e::AS_OFFERED, _major, _minor);
@@ -2523,7 +2544,8 @@ void routing_manager_impl::add_routing_info(
                 stub_->on_offer_service(VSOMEIP_ROUTING_CLIENT,
                         _service, _instance,
                         its_info->get_major(),
-                        its_info->get_minor());
+                        its_info->get_minor(),
+                        std::move(_configuration));
                 if (discovery_) {
                     std::shared_ptr<endpoint> ep = its_info->get_endpoint(false);
                     if (ep && ep->is_established()) {
@@ -3570,7 +3592,7 @@ bool routing_manager_impl::handle_local_offer_service(client_t _client, service_
         if (routing_manager_base::offer_service(_client, _service, _instance,
                 _major, _minor)) {
             local_services_[_service][_instance] = std::make_tuple(_major,
-                    _minor, _client);
+                    _minor, _client, std::multimap<std::string, configuration_option_value_t>());
         } else {
             VSOMEIP_ERROR << "routing_manager_impl::handle_local_offer_service: "
                 << "rejecting service registration. Application: "
@@ -4633,7 +4655,7 @@ void routing_manager_impl::service_endpoint_connected(
                 _major, _minor);
         if (stub_)
             stub_->on_offer_service(VSOMEIP_ROUTING_CLIENT, _service, _instance,
-                    _major, _minor);
+                    _major, _minor, get_configuration_options(_service, _instance));
     }
 
     std::shared_ptr<boost::asio::steady_timer> its_timer =
