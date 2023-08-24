@@ -2898,4 +2898,8 @@ void routing_manager_client::on_suspend() {
     remote_subscriber_count_.clear();
 }
 
+void routing_manager_client::expire_services(const boost::asio::ip::address &_address) {
+    VSOMEIP_WARNING <<
+        "Only Routing Manager can expire Services " << _address;
+}
 }  // namespace vsomeip_v3

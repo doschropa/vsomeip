@@ -226,6 +226,8 @@ public:
                 service_t _service, instance_t _instance, eventgroup_t _eventgroup,
                 async_subscription_handler_sec_t _handler);
 
+    VSOMEIP_EXPORT void expire_services(const ip_address_t& _address);
+
 private:
     //
     // Types

@@ -1104,6 +1104,17 @@ public:
     virtual void register_async_subscription_handler(
             service_t _service, instance_t _instance, eventgroup_t _eventgroup,
             async_subscription_handler_sec_t _handler) = 0;
+
+    /**
+     *
+     * \ brief Removes an host from Routingmanager
+     * This method removes all instances of a host from the routing manager.
+     * Usually this is only necessary for devices with incorrect implementation
+     * of the SomeIP protocol.
+     *
+     * \param _address IP-Adress of the host to remove
+     */
+    virtual void expire_services(const ip_address_t& _address) = 0;
 };
 
 /** @} */

@@ -118,6 +118,8 @@ public:
 
     void send_get_offered_services_info(client_t _client, offer_type_e _offer_type);
 
+    void expire_services(const boost::asio::ip::address &_address);
+
 private:
     void assign_client();
     void register_application();

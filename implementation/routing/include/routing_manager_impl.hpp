@@ -310,6 +310,8 @@ public:
             const boost::asio::ip::address &_remote_address,
             port_t _remote_port);
 
+    void expire_services(service_t _service, instance_t _instance);
+
 private:
     bool offer_service(client_t _client,
             service_t _service, instance_t _instance,

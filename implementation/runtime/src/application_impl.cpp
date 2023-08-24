@@ -2934,4 +2934,24 @@ application_impl::get_additional_data(const std::string &_plugin_name) {
     return std::map<std::string, std::string>();
 }
 
+void application_impl::expire_services(const ip_address_t& _address) {
+    if(!routing_) {
+        return;
+    }
+    boost::asio::ip::address its_address;
+    if (_address.is_v4_) {
+        its_address = boost::asio::ip::address_v4(
+            boost::asio::detail::array<unsigned char, 4>{
+                _address.address_.v4_
+            }
+        );
+    } else {
+        its_address = boost::asio::ip::address_v6(
+            boost::asio::detail::array<unsigned char, 16>{
+                _address.address_.v6_
+            }
+        );
+    }
+    routing_->expire_services(its_address);
+}
 } // namespace vsomeip_v3
