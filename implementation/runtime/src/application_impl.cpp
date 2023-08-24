@@ -2942,4 +2942,24 @@ application_impl::get_configuration_options(service_t _service, instance_t _inst
     return routing_->get_configuration_options(_service, _instance);
 }
 
+void application_impl::expire_services(const ip_address_t& _address) {
+    if(!routing_) {
+        return;
+    }
+    boost::asio::ip::address its_address;
+    if (_address.is_v4_) {
+        its_address = boost::asio::ip::address_v4(
+            boost::asio::detail::array<unsigned char, 4>{
+                _address.address_.v4_
+            }
+        );
+    } else {
+        its_address = boost::asio::ip::address_v6(
+            boost::asio::detail::array<unsigned char, 16>{
+                _address.address_.v6_
+            }
+        );
+    }
+    routing_->expire_services(its_address);
+}
 } // namespace vsomeip_v3

@@ -1117,6 +1117,16 @@ public:
      */
     virtual std::multimap<std::string, configuration_option_value_t> get_configuration_options(
             service_t _service, instance_t _instance) = 0;
+
+    /**
+     * \brief Removes an host from Routingmanager
+     * This method removes all instances of a host from the routing manager.
+     * Usually this is only necessary for devices with incorrect implementation
+     * of the SomeIP protocol.
+     *
+     * \param _address IP-Adress of the host to remove
+     */
+    virtual void expire_services(const ip_address_t& _address) = 0;
 };
 
 /** @} */

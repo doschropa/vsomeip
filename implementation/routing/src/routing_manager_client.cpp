@@ -2926,4 +2926,8 @@ routing_manager_client::get_configuration_options(service_t _service, instance_t
     return std::get<3>(instance->second);
 }
 
+void routing_manager_client::expire_services(const boost::asio::ip::address &_address) {
+    VSOMEIP_WARNING <<
+        "Only Routing Manager can expire Services " << _address;
+}
 }  // namespace vsomeip_v3

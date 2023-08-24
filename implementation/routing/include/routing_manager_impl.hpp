@@ -314,6 +314,8 @@ public:
     std::multimap<std::string, configuration_option_value_t>
     get_configuration_options(service_t _service, instance_t _instance);
 
+    void expire_services(service_t _service, instance_t _instance);
+
 private:
     bool offer_service(client_t _client,
             service_t _service, instance_t _instance,

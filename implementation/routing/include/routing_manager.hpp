@@ -137,6 +137,8 @@ public:
 
     virtual std::multimap<std::string, configuration_option_value_t> get_configuration_options(
             service_t _service, instance_t _instance) = 0;
+
+    virtual void expire_services(const boost::asio::ip::address &_address) = 0;
 };
 
 }  // namespace vsomeip_v3

@@ -121,6 +121,8 @@ public:
     std::multimap<std::string, configuration_option_value_t>
     get_configuration_options(service_t _service, instance_t _instance);
 
+    void expire_services(const boost::asio::ip::address &_address);
+
 private:
     void assign_client();
     void register_application();

@@ -229,6 +229,8 @@ public:
     VSOMEIP_EXPORT std::multimap<std::string, configuration_option_value_t> get_configuration_options(
             service_t _service, instance_t _instance);
 
+    VSOMEIP_EXPORT void expire_services(const ip_address_t& _address);
+
 private:
     //
     // Types
